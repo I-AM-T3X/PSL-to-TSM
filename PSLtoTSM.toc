@@ -1,0 +1,26 @@
+## Interface: 120007, 120100, 120105
+## Title: PSL to TSM
+## Notes: Turns your Profession Shopping List into a TradeSkillMaster search string.
+## Author: Tex
+## Version: v1.0.0
+## IconTexture: Interface\Icons\INV_Inscription_ParchmentVar06
+## Category-enUS: Auction House
+## X-License: MIT
+## SavedVariables: PSLtoTSMDB
+## Dependencies: ProfessionShoppingList
+## AddonCompartmentFunc: PSLtoTSM_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: PSLtoTSM_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: PSLtoTSM_OnAddonCompartmentLeave
+
+Libs\LibStub\LibStub.lua
+Libs\LibAHTab\LibAHTab.xml
+
+Init.lua
+Style.lua
+Source.lua
+Builder.lua
+TextView.lua
+AuctionTab.lua
+Window.lua
+Settings.lua
+Slash.lua
