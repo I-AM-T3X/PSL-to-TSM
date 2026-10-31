@@ -80,7 +80,7 @@ end
 ----------------------------------------------------------------------
 -- Views and change notification
 --
--- Anything that shows the string (the AH tab, the copy window) registers
+-- Anything that shows the string (the TSM tab, the copy window) registers
 -- itself as a view with :IsShown() and :Update(fromPlayer). When PSL's
 -- tracked recipes or your bags change, every view that's on screen
 -- rebuilds. Changes arrive in bursts (looting, crafting a stack), so the

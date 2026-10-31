@@ -2,16 +2,14 @@ local ADDON, ns = ...
 
 -- Where the shopping list comes from.
 --
--- ns.Source:Read() returns PSL's list as
---   { [itemID] = { need = number, have = number }, ... }
--- plus how it was read:
+-- ns.Source:Via() says how Profession Shopping List can be read:
 --
---   "api"      Profession Shopping List's own GetShoppingList(). Used
---              whenever the installed PSL has it.
---   "recipes"  For PSL releases that don't have it yet. Works the list out
---              from the recipes PSL is tracking (read from PSL's saved
---              data) and the game's own recipe information, using these
---              rules:
+--   "tsm"      PSL v12.1.5-02 and newer. PSL builds the TSM search string
+--              itself (GetTSMSearchString), using its own rules, and
+--              GetMerchantShoppingList gives the numbers behind it.
+--   "recipes"  Older PSL releases. The list is worked out from the recipes
+--              PSL is tracking (read from PSL's saved data) and the game's
+--              own recipe information, using these rules:
 --                - every basic reagent of each tracked recipe, times how
 --                  many of that recipe are tracked
 --                - the quality rank is PSL's "minimum reagent quality"
@@ -24,19 +22,15 @@ local ADDON, ns = ...
 --              count higher ranks toward lower ones, or subtract reagents a
 --              crafting order's customer provides), so amounts can differ
 --              from PSL's window there.
+--   nil        PSL isn't there to read.
 
 local Source = {}
 ns.Source = Source
 
 local BASIC_REAGENT = (Enum and Enum.CraftingReagentType and Enum.CraftingReagentType.Basic) or 1
 
-local function OwnedCount(itemID)
-  local ok, count = pcall(C_Item.GetItemCount, itemID, true, false, true, true)
-  return ok and count or 0
-end
-
-local function PSLHasApi()
-  return type(ProfessionShoppingList) == "table" and type(ProfessionShoppingList.GetShoppingList) == "function"
+local function PSLHas(method)
+  return type(ProfessionShoppingList) == "table" and type(ProfessionShoppingList[method]) == "function"
 end
 
 local function TrackedRecipes()
@@ -47,10 +41,9 @@ local function TrackedRecipes()
   return nil
 end
 
--- "api", "recipes", or nil when PSL isn't there to read.
 function Source:Via()
-  if PSLHasApi() then
-    return "api"
+  if PSLHas("GetTSMSearchString") then
+    return "tsm"
   end
   if type(ProfessionShoppingList) == "table" and TrackedRecipes() then
     return "recipes"
@@ -59,8 +52,46 @@ function Source:Via()
 end
 
 ----------------------------------------------------------------------
--- The "recipes" way
+-- The "tsm" way: PSL's own API
 ----------------------------------------------------------------------
+
+-- PSL's string, or nil. PSL returns nothing both when there's nothing to
+-- buy and when some item's details haven't loaded yet.
+function Source:TSMString()
+  local ok, text = pcall(ProfessionShoppingList.GetTSMSearchString, ProfessionShoppingList)
+  if ok and type(text) == "string" and text ~= "" then
+    return text
+  end
+  return nil
+end
+
+-- PSL's numbers as { [itemID] = { need, have } }, or nil. Called before
+-- TSMString because it also brings PSL's reagent totals up to date.
+function Source:MerchantList()
+  if not PSLHas("GetMerchantShoppingList") then
+    return nil
+  end
+  local ok, answer = pcall(ProfessionShoppingList.GetMerchantShoppingList, ProfessionShoppingList)
+  if not ok or type(answer) ~= "table" then
+    return nil
+  end
+  local list = {}
+  for itemID, entry in pairs(answer) do
+    if type(itemID) == "number" and type(entry) == "table" then
+      list[itemID] = { need = tonumber(entry.required) or 0, have = tonumber(entry.owned) or 0 }
+    end
+  end
+  return list
+end
+
+----------------------------------------------------------------------
+-- The "recipes" way: older PSL releases
+----------------------------------------------------------------------
+
+local function OwnedCount(itemID)
+  local ok, count = pcall(C_Item.GetItemCount, itemID, true, false, true, true)
+  return ok and count or 0
+end
 
 -- PSL keys a tracked recipe by its recipe ID, or a crafting order by
 -- "order:<orderID>:<recipeID>". Anything else (vendor items, currencies)
@@ -129,39 +160,11 @@ local function ReadFromRecipes()
   return list
 end
 
-----------------------------------------------------------------------
--- The "api" way
-----------------------------------------------------------------------
-
--- PSL's API answers { required, owned }; this addon calls them need/have.
-local function ReadFromApi()
-  local ok, answer = pcall(ProfessionShoppingList.GetShoppingList, ProfessionShoppingList)
-  if not ok or type(answer) ~= "table" then
-    return nil
-  end
-  local list = {}
-  for itemID, entry in pairs(answer) do
-    if type(itemID) == "number" and type(entry) == "table" then
-      list[itemID] = { need = tonumber(entry.required) or 0, have = tonumber(entry.owned) or 0 }
-    end
-  end
-  return list
-end
-
-----------------------------------------------------------------------
-
-function Source:Read()
-  local via = self:Via()
-  if via == "api" then
-    local list = ReadFromApi()
-    if list then
-      return list, via
-    end
-  elseif via == "recipes" then
-    local ok, list = pcall(ReadFromRecipes)
-    if ok and list then
-      return list, via
-    end
+-- The worked-out list as { [itemID] = { need, have } }, or nil.
+function Source:RecipeList()
+  local ok, list = pcall(ReadFromRecipes)
+  if ok then
+    return list
   end
   return nil
 end

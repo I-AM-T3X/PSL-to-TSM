@@ -1,14 +1,17 @@
 local ADDON, ns = ...
 
--- The box the search string is shown in, shared by the AH tab and the
--- window.
+-- The box the search string is shown in, shared by the TSM tab on PSL's
+-- window and the /psltsm convert window.
 --
---   local view = ns.NewTextView(parent)
+--   local view = ns.NewTextView(parent, compact)
 --   view.well    the dark box with the text (anchor it where you want it)
 --   view.bar     page arrows, "Part x of y" and Select All (anchor it too)
 --   view.hint    "Select All, then Ctrl+C" line (anchor it too)
 --   view:SetPages(pages, keepPlace)
 --   view:SelectAll()
+--
+-- compact: smaller controls ("1/3" instead of "Part 1 of 3", a narrower
+-- Select All) for tight spaces like PSL's window.
 --
 -- WoW gives addons no clipboard access, so copying is always the player's
 -- Ctrl+C. The box only takes keyboard focus when the player does something
@@ -28,7 +31,7 @@ local function SamePages(a, b)
   return true
 end
 
-function ns.NewTextView(parent)
+function ns.NewTextView(parent, compact)
   local view = { pages = { "" }, page = 1 }
 
   -- The text well
@@ -75,10 +78,10 @@ function ns.NewTextView(parent)
 
   -- Controls: [Part x of y] [<] [>] [Select All]
   local bar = CreateFrame("Frame", nil, parent)
-  bar:SetSize(260, 22)
+  bar:SetSize(compact and 150 or 260, 22)
   view.bar = bar
 
-  local selectAll = Style.Button(bar, "Select All", 84)
+  local selectAll = Style.Button(bar, "Select All", compact and 66 or 84)
   selectAll:SetPoint("RIGHT")
   local nextPart = Style.Button(bar, ">", 24)
   nextPart:SetPoint("RIGHT", selectAll, "LEFT", -6, 0)
@@ -106,7 +109,7 @@ function ns.NewTextView(parent)
     partLabel:SetShown(several)
     prevPart:SetShown(several)
     nextPart:SetShown(several)
-    partLabel:SetText(("Part %d of %d"):format(self.page, #self.pages))
+    partLabel:SetText((compact and "%d/%d" or "Part %d of %d"):format(self.page, #self.pages))
     prevPart:SetEnabled(self.page > 1)
     nextPart:SetEnabled(self.page < #self.pages)
   end

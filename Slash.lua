@@ -36,19 +36,19 @@ end
 local COMMANDS = {
   { word = "settings", also = { "", "options", "config" }, usage = "open the settings (plain /psltsm does too)",
     run = OpenSettings },
-  { word = "convert", usage = "show the search string in a window, anywhere",
+  { word = "tab", usage = "open Profession Shopping List's window on the TSM tab",
+    run = function()
+      if not ns.PSLWindow:Open() then
+        ns.Say("Couldn't open Profession Shopping List's window. Use |cffffffff/psltsm convert|r instead.")
+      end
+    end },
+  { word = "convert", usage = "show the search string in a window of its own",
     run = function()
       if not ns.Source:Via() then
         ns.Say("Profession Shopping List isn't loaded.")
         return
       end
       ns.Window:Open()
-    end },
-  { word = "tab", usage = "switch to the PSL to TSM tab (Auction House must be open)",
-    run = function()
-      if not ns.AuctionTab:Select() then
-        ns.Say("Open the Auction House first, or use |cffffffff/psltsm convert|r.")
-      end
     end },
   { word = "owned", usage = "on/off: only buy what you're missing",
     run = function(rest)
@@ -114,7 +114,7 @@ SlashCmdList.PSLTOTSM = Slash.Run
 function PSLtoTSM_OnAddonCompartmentClick(_, mouseButton)
   if mouseButton == "RightButton" then
     OpenSettings()
-  elseif not ns.AuctionTab:Select() then
+  elseif not ns.PSLWindow:Open() then
     ns.Window:Toggle()
   end
 end

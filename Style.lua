@@ -92,7 +92,16 @@ function Style.Check(parent, label, help, read, write)
     mark:SetShown(read() and true or false)
   end
 
+  -- Greys the switch out (and ignores clicks) when it has no effect.
+  function box:SetActive(active)
+    self.inactive = not active
+    self:SetAlpha(active and 1 or 0.4)
+  end
+
   box:SetScript("OnClick", function(self)
+    if self.inactive then
+      return
+    end
     write(not read())
     self:Sync()
   end)

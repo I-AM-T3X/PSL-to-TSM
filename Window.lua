@@ -1,9 +1,8 @@
 local ADDON, ns = ...
 
--- A small movable window with the search string, for when the Blizzard
--- Auction House window isn't the one showing (TSM's own AH window, or
--- anywhere else). Opened with /psltsm convert or the addon menu. Escape
--- closes it.
+-- A small movable window with the search string, opened with
+-- /psltsm convert, or from the addon menu if PSL's window can't be used.
+-- The backup for the TSM tab on PSL's window. Escape closes it.
 
 local Style = ns.Style
 
